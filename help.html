@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The SoA Maker</title>
+<link rel="stylesheet" href="styles.css">
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header-section">
+      <h2>
+        <span id="header-text"></span>
+        <span id="cursor"></span>
+      </h2>
+    </div>
+    <div class="button-section"></div>
+    <div class="content">
+      <div class="step">
+        <h2>Getting Started</h2>
+        <p>
+          When you open the SoA_Template Access file, you'll be prompted to choose between creating a new SoA or adding to an existing one.
+          <br>
+          <strong>Starting a new SoA will permanently delete the previous SoA that was being worked on in this database.</strong>
+      </p>
+      
+    </div>
+
+    <div class="step">
+        <h2>Lets build a SoA</h2>
+        <p>Regardless of whether you're starting a new SoA or continuing an existing one, you'll be directed to the input form called SoA_Input_Form. (If you accidentally close it, you can find it under that name in the MS Access Navigation bar).
+          <br>
+          You'll be prompted to select the Area(s), Department(s) and Sub-Department(s) and Room(s) you want to add to the SoA:
+        </p>
+        <ul>
+            <li>Begin by selecting the Area. It's recommended to tackle one at a time, but you can choose to work on as many as you like.</li>
+            <li>Then select the Department(s), Sub-Department(s) and Room(s). All this information is generated dynamically based on your selections.</li>
+            <li>When you have selected your rooms, press the "Add to SoA" button.</li>
+            <li>You can go back and add rooms from other areas, departments or sub-departments at any time. When you press the "Add to SoA" button any new entires will be added to the table "SoA".</li>
+            <li>You can view the rooms that have been added by pressing the "View SoA" button.</li>
+            <li>If you think you've made a series of terrible mistakes and just want to start again, press the "Start a fresh SoA" button. This will delete all content in the table so you can start again.</li>
+            <li>Or if you made a tiny mistake and just want to amend a room, press the "View SoA" button and just delete the row that contains the errant room.  </li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Time to export</h2>
+        <p>Are you ready to export your beautifully curated set of rooms into a fully functional SoA in MS Excel?</p>
+        <p>To do so, press the "Build the Soa" button. It may appear as if nothing is happening but in the background magic is happening.</p>
+        <p>You will be greeted with a pop up box asking to confirm if you want to continue. If you do then you will be given a file prompt. Choose where you want to save the SoA and what you want to call it and it will open automatically when its ready.</p>
+    </div>
+
+
+    <div class="step">
+      <h2>The SoA</h2>
+      <p>You should be presented with the SoA you just created and the rooms that you selected previously. For a run down on how it works, press the "SoA template Export" button at the top of this page.
+
+    </p>
+    
+  </div>
+    </div>
+
+    
+  </div>
+
+<!-- Back to Top Button with Font Awesome icon and custom style -->
+<button onclick="scrollToTop()" id="back-to-top-btn" class="button" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+<script>
+  // JavaScript to show/hide the back to top button
+  window.onscroll = function() {scrollFunction()};
+  
+  function scrollFunction() {
+    var button = document.getElementById("back-to-top-btn");
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+      button.style.opacity = "1";
+    } else {
+      button.style.opacity = "0";
+    }
+  }
+  
+  function scrollToTop() {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+  </script>
+
+<script src="js/helpscript.js"></script>
+
+</body>
+</html>

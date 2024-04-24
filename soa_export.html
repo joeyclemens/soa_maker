@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The SoA Export</title>
+<link rel="stylesheet" href="styles.css">
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header-section">
+      <h2>
+        <span id="header-text"></span>
+        <span id="cursor"></span>
+      </h2>
+    </div>
+    <div class="button-section"></div>
+    <div class="content">
+      <div class="step">
+        <h2>The Layout</h2>
+        <p>
+         The SoA that you have just exported is based on the Rooms you selected in the MS Access form SoA_Input_Form. You will be presented with a Summary page and tabs named for the Areas that the rooms you chose have come from.
+      </p>
+      <p>The formulas and formatting should be applied dynamically so there shouldnt be too much to do other than any specific things you want to add in or change. </p>
+      
+    </div>
+
+    <div class="step">
+        <h2>The Summary tab</h2>
+        <p>The Summary tab is where you can see a summary of the Departments and Sub Departments that you selected.  </p>
+        <ul>
+          <li> 
+          The Target NET (m2) column is a sub total of each Sub Department from across the other tabs. 
+        </li>
+        <li>
+          Planning allowances (%) is set to 5% on all rows. This can be changed if you have a specific allowance for a particular Sub Department and the rest of the formulas will adjust themselves accordingly.
+        </li>
+        
+            <li>Planning allowance Total (m2) is calculated based on the information in the Target NET (m2) column.</li>
+            <li>Engineering allowance (%) is set to 5% on all rows. This can be changed if you have a specific allowance for a particular Sub Department and the rest of the formulas will adjust themselves accordingly.</li>
+            <li>Engineering allowance Total (m2) is calculated based on the information in the Target NET (m2) column.</li>
+          
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>The Other Tabs</h2>
+        <p>The other tabs will be formatted identically to each other and will contain the following headers:
+          <br>
+          AL3, AL2, AL1, Room_ID, Room_Description, Qty, Area, Total_Area, Comments<sub style="vertical-align: super; font-size: smaller;">1</sub>.
+          <br>         
+        </p>
+        
+        <ul>
+        <li>AL3, AL2, AL1 represent Area, Department and Sub Department from the SoA_Input_Form. The AL3 and AL1 columns are used in creating the Summary tab.
+        </li>
+          <li>Room_ID is the unique identifier for each room as set in the database<sub style="vertical-align: super; font-size: smaller;">2</sub>. 
+        </li>
+        <li>Room_Description is the name of the room. </li>
+        <li>The Qty data has been taken from the Template SoA<sub style="vertical-align: super; font-size: smaller;">3</sub>. It can be changed and all formulas will adjust themselves accordingly.</li>
+        <li>Area is the total area of the room as set in the database. The information has come from the Template SoA<sub style="vertical-align: super; font-size: smaller;">3</sub>.</li>
+        <li>Total Area is the total area of the room multiplied by the Qty.</li>
+        <li>Comments have come from the Template SoA and are in the database<sub style="vertical-align: super; font-size: smaller;">3</sub>.</li>
+       
+        <p style="font-size: smaller;"><sub style="vertical-align: super; font-size: smaller;">1</sub>As this is still an early version these column headers are likely to change in the future.</p>
+        <p style="font-size: smaller;"><sub style="vertical-align: super; font-size: smaller;">2</sub>This column is just for debug purposes at this stage and may be removed</p>
+        <p style="font-size: smaller;"><sub style="vertical-align: super; font-size: smaller;">3</sub>This data can easily be changed in the database should any of it be consistently wrong or just in need of updating. See the reference Template SoA for further details.</p>
+      </div>
+  </ul>
+
+    <div class="step">
+      <h2>Notable information</h2>
+      <p>Columns K:L are reserved for forumlas needed to fill the Summary Tab. The Summary uses a Vlook-up that checks those columns so any changes there may break the Summary page</p>
+      <p>Formatting is created for each tab as the worksheet is created. The formulas are created dynamically based on the information passed on from the SoA_Input_Form. The data should be accurate but its always wise to check the numbers as the script isnt clever enough to determine errors, let alone fix them as it goes. </p>
+
+    
+  </div>
+    </div>
+
+    
+  </div>
+
+<!-- Back to Top Button with Font Awesome icon and custom style -->
+<button onclick="scrollToTop()" id="back-to-top-btn" class="button" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+<script>
+  // JavaScript to show/hide the back to top button
+  window.onscroll = function() {scrollFunction()};
+  
+  function scrollFunction() {
+    var button = document.getElementById("back-to-top-btn");
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+      button.style.opacity = "1";
+    } else {
+      button.style.opacity = "0";
+    }
+  }
+  
+  function scrollToTop() {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+  </script>
+  
+<script src="js/exportscript.js"></script>
+
+</body>
+</html>

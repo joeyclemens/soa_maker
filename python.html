@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The SoA Maker</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/monokai-sublime.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+  
+
+
+  <style>
+    /* CSS styles for code display */
+    .code-container {
+      background-color: #f4f4f4;
+      padding: 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+      overflow-x: auto; /* Enable horizontal scrolling */
+    }
+    .code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px; /* Adjust text size */
+      line-height: 1.2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-section">
+      <h2>
+        <span id="header-text"></span>
+        <span id="cursor"></span>
+      </h2>
+    </div>
+    <div class="button-section"></div>
+    <div class="content">
+      <div class="step">
+        <h2>Python source code for reference</h2>
+        <div class="code-container">
+          <pre class="code" class="python">
+            <code>
+import pyodbc
+import pandas as pd
+from tkinter import Tk, filedialog
+import xlsxwriter
+import os
+
+    
+# Connection parameters
+server = 'mjm-sql01'
+database = 'MJM_SoA_Template'
+trusted_connection = 'yes'  # Use Windows authentication
+
+# Construct the connection string
+conn_str = f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};Trusted_Connection={trusted_connection};'
+
+try:
+    # Connect to the database
+    conn = pyodbc.connect(conn_str)
+    
+    # If connection is successful, print a success message
+    print("Connected to the SQL Server database successfully!")
+
+    # Execute SQL query to select all records from dbo.SoA table
+    sql_query = 'SELECT * FROM dbo.SoA'
+    df = pd.read_sql(sql_query, conn)
+
+   
+    # Reorder the columns as per your request
+    columns_order = ['AL3', 'AL2', 'AL1', 'Room_ID', 'Room_Description', 'Qty', 'Area', 'Comments']
+    df = df[columns_order]
+
+    # Check if 'ParentArea' column exists in the DataFrame before dropping it
+    if 'ParentArea' in df.columns:
+        df.drop(columns=['ParentArea'], inplace=True)
+
+    # Group the data by the value in the 'AL3' column
+    grouped_data = df.groupby('AL3')
+
+    # Create an empty list to store dictionaries
+    department_subdepartment_set = set()
+    for group_name, group_data in grouped_data:
+        department = group_name
+        sub_departments = group_data['AL1'].tolist()
+        for sub_department in sub_departments:
+            department_subdepartment_set.add((department, sub_department))
+
+    # Convert the set to a list of dictionaries
+    summary_data_list = [{'Department': department, 'Sub Department': sub_department} for department, sub_department in department_subdepartment_set]
+
+    # Convert the list of dictionaries to a DataFrame
+    summary_data = pd.DataFrame(summary_data_list)
+
+    # Add the remaining column headers to the summary DataFrame
+    summary_data = summary_data.reindex(columns=['Department', 'Sub Department', 'Functional Content', 
+                                                 'Patient Spaces', 'Target NET (m2)', 'Planning allowances (%)', 
+                                                 'Planning allowance Total (m2)', 'Circulation Allowance (%)', 
+                                                 'Circulation Allowance Total (m2)', 'Engineering allowance (%)', 
+                                                 'Engineering allowance Total (m2)', 'Target GDA (m2)'])
+
+    # Create a Tkinter root window
+    root = Tk()
+    root.withdraw()  # Hide the root window
+
+    # Prompt the user to select the save location and file name
+    file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+
+    if file_path:  # If a file path is selected
+        # Create an Excel writer object with xlsxwriter engine
+        writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
+        
+        # Access the workbook object
+        workbook = writer.book
+
+        # Disable error checking rules related to numbers formatted as text or preceded by an apostrophe
+        workbook.set_properties({
+            'number_format': {'type': 'text'},
+            'text_format': {'type': 'text'},
+            'precedes_separator': {'type': 'text'},
+            'formula_blank': {'type': 'text'},
+            'formula_inconsistent': {'type': 'text'},
+            'list_data_validation': {'type': 'text'},
+            'formula_number': {'type': 'text'},
+            'empty_cell_references': {'type': 'text'},
+        })
+
+        # Write the summary data to a new sheet
+        summary_data.to_excel(writer, sheet_name='Summary', index=False)
+
+        # Access the workbook and worksheet objects for the summary sheet
+        workbook = writer.book
+        summary_worksheet = writer.sheets['Summary']
+        
+        # Freeze the top row of the summary sheet
+        summary_worksheet.freeze_panes(1, 0)
+        
+        # Set each row under the 'Planning allowances (%)' column to be "5%"
+        for row_idx in range(len(summary_data)):
+            cell_range = xlsxwriter.utility.xl_range(row_idx + 1, summary_data.columns.get_loc('Planning allowances (%)'), row_idx + 1, summary_data.columns.get_loc('Planning allowances (%)'))
+            summary_worksheet.write_formula(row_idx + 1, summary_data.columns.get_loc('Planning allowances (%)'), '"5%"', None, '"5%"')
+
+        # Add a formula to the "Planning allowance Total (m2)" column
+        for row_idx in range(len(summary_data)):
+            formula = f'=E{row_idx + 2}*F{row_idx + 2}'  # Adjusting for 1-based indexing in Excel
+            summary_worksheet.write_formula(row_idx + 1, summary_data.columns.get_loc('Planning allowance Total (m2)'), formula)
+
+        # Set each row under the 'Engineering allowance (%)' column to be "5%"
+        for row_idx in range(len(summary_data)):
+            cell_range = xlsxwriter.utility.xl_range(row_idx + 1, summary_data.columns.get_loc('Engineering allowance (%)'), row_idx + 1, summary_data.columns.get_loc('Engineering allowance (%)'))
+            summary_worksheet.write_formula(row_idx + 1, summary_data.columns.get_loc('Engineering allowance (%)'), '"5%"', None, '"5%"')
+
+        # Add a formula to the "Engineering allowance Total (m2)" column
+        for row_idx in range(len(summary_data)):
+            formula = f'=E{row_idx + 2}*J{row_idx + 2}'  # Adjusting for 1-based indexing in Excel
+            summary_worksheet.write_formula(row_idx + 1, summary_data.columns.get_loc('Engineering allowance Total (m2)'), formula)
+
+
+
+        # Set the width of each column to fit the content
+        for idx, col in enumerate(summary_data.columns):
+            max_len = max((summary_data[col].astype(str).map(len).max(), len(str(col)))) + 1
+            summary_worksheet.set_column(idx, idx, max_len)
+
+        # Adjust the height of each row to fit the content and enable text wrapping
+        for i, row in enumerate(summary_data.iterrows()):
+            for j, cell in enumerate(row[1]):
+                cell_len = len(str(cell))
+                # Set the minimum height for the row
+                summary_worksheet.set_row(i + 1, 30)
+                # Adjust the height of the row to fit the content if the cell content length is larger
+                if cell_len > 50:
+                    summary_worksheet.set_row(i + 1, 45)
+                elif cell_len > 100:
+                    summary_worksheet.set_row(i + 1, 60)
+                elif cell_len > 150:
+                    summary_worksheet.set_row(i + 1, 75)
+
+       # Format column headers with desired background and font color
+        for col_num, value in enumerate(summary_data.columns.values):
+            if col_num < 5:  # Columns A to E
+                header_format = workbook.add_format({'bg_color': '#51748b', 'font_color': 'white', 'bold': True})
+            else:  # Columns F to L
+                header_format = workbook.add_format({'bg_color': '#86b3d1', 'font_color': 'black', 'bold': True})
+            summary_worksheet.write(0, col_num, value, header_format)
+
+        # Set the width of columns C to L to 12 units
+        summary_worksheet.set_column('C:L', 12)
+
+      
+        # Iterate over groups and write each group to a separate sheet
+        for group_name, group_data in grouped_data:
+            # Write each group to a separate sheet with the sheet name as the value in the 'AL3' column
+            group_data.to_excel(writer, sheet_name=group_name, index=False)
+
+            # Access the workbook and worksheet objects
+            workbook = writer.book
+            worksheet = writer.sheets[group_name]
+            
+            # Freeze the top row
+            worksheet.freeze_panes(1, 0)
+            
+            # Convert 'Qty' column to numeric type
+            qty_column_index = group_data.columns.get_loc('Qty')  # Get the index of the 'Qty' column
+            group_data['Qty'] = pd.to_numeric(group_data['Qty'], errors='coerce')  # Convert 'Qty' column to numeric type, coerce errors to NaN
+
+            # Format the 'Qty' column as number
+            number_format = workbook.add_format({'num_format': '#,##0.00'})  # Define the number format
+            worksheet.set_column(qty_column_index, qty_column_index, None, number_format)  # Apply the number format to the 'Qty' column
+                    
+
+
+            # Add a new column "Total_Area" after the "Area" column
+            area_column_index = group_data.columns.get_loc('Area')  # Get the index of the "Area" column
+            worksheet.write(0, area_column_index + 1, "Total_Area", workbook.add_format({'bold': True, 'border': 1}))  # Write the column header with bold formatting and border
+            for row in range(1, len(group_data) + 1):
+                formula = f'=IFERROR(F{row + 1}*G{row + 1}, "")'  # Formula for Total_Area
+                worksheet.write_formula(row, area_column_index + 1, formula)  # Write the formula
+                        
+            # Move the "Comments" column to the end after "Total_Area"
+            if 'Comments' in group_data.columns:
+                comments_column_index = group_data.columns.get_loc('Comments')  # Get the index of the "Comments" column
+                # Shift the columns to the right starting from the "Total_Area" column
+                worksheet.write(0, area_column_index + 2, "Comments", workbook.add_format({'bold': True, 'border': 1}))  # Write the column header with bold formatting and border
+                for row in range(1, len(group_data) + 1):
+                    worksheet.write(row, area_column_index + 2, group_data.iloc[row - 1, comments_column_index])
+
+
+
+                # Iterate over the columns and set the width to fit the text
+                for idx, col in enumerate(group_data.columns):
+                    max_len = max((group_data[col].astype(str).map(len).max(), len(str(col)))) + 1
+                    worksheet.set_column(idx, idx, max_len)
+
+                # Set the width of column "G" to at least 22.86 units and enable text wrapping
+                worksheet.set_column('G:G', 22.86, workbook.add_format({'text_wrap': True}))
+
+                # Set the width of the last column (column I) to at least 22.86 units and enable text wrapping
+                worksheet.set_column('I:I', 22.86, workbook.add_format({'text_wrap': True}))
+
+                 # Set the width of the last column (column I) to at least 22.86 units and enable text wrapping
+                worksheet.set_column('H:H', 9.86, workbook.add_format({'text_wrap': True}))
+                
+                # Format column headers with desired background, font color, and text wrapping
+                for col_num, value in enumerate(summary_data.columns.values):
+                    if col_num < 5:  # Columns A to E
+                        header_format = workbook.add_format({'bg_color': '#51748b', 'font_color': 'white', 'bold': True, 'text_wrap': True})
+                    else:  # Columns F to L
+                        header_format = workbook.add_format({'bg_color': '#86b3d1', 'font_color': 'black', 'bold': True, 'text_wrap': True})
+                    summary_worksheet.write(0, col_num, value, header_format)
+                    
+                 
+
+
+            # Add subtotal to sheets other than 'Summary'
+            if group_name != 'Summary':
+                last_row_index = len(group_data) + 1
+                last_column_index = area_column_index + 1
+                total_area_range = xlsxwriter.utility.xl_range(1, last_column_index, last_row_index - 1, last_column_index)  # Exclude the row with subtotal
+
+                # Write the subtotal label with thick border and light blue background
+                worksheet.write(last_row_index, area_column_index, 'Subtotal', workbook.add_format({'bold': True, 'border': 2, 'bg_color': '#6699ff'}))
+
+                # Write the subtotal formula with thick border
+                worksheet.write_formula(last_row_index, last_column_index, f'=SUBTOTAL(109,{total_area_range})', workbook.add_format({'border': 2}))
+
+                # Extract unique values from the 'AL1' column
+                unique_al1_values = group_data['AL1'].unique()
+
+                # Write unique 'AL1' values to the sheet starting from cell K2
+                al1_start_row = 1  # Start row for writing 'AL1' values
+                al1_start_col = len(group_data.columns) + 2  # Start column for writing 'AL1' values (after the existing columns)
+                for idx, al1_value in enumerate(unique_al1_values):
+                    worksheet.write(al1_start_row + idx, al1_start_col, al1_value)
+
+                    # Add SUMIF formula next to each unique 'AL1' value
+                    formula = f'=SUMIF($C$2:$H${len(group_data)+1},K{al1_start_row+idx+1},$H$2:$H${len(group_data)+1})'
+                    worksheet.write_formula(al1_start_row + idx, al1_start_col + 1, formula)
+                    
+                # Hide columns K and L
+                worksheet.set_column('K:L', None, None, {'hidden': True})
+
+        # Write VLOOKUP formula in the 'Target NET (m2)' column of the summary sheet
+        for i, row in summary_data.iterrows():
+            # Extract department name
+            department = row['Department']
+
+            # Define the cell reference for the department
+            department_cell = f"B{i+2}"  # Add 2 to account for 0-based index and header row
+
+            # Construct the dynamic sheet name
+            sheet_name = f"'{department}'!K$2:L$90"  # Assuming 'K$7:L$9' is the range to lookup
+
+            # Write the VLOOKUP formula
+            vlookup_formula = f"=VLOOKUP({department_cell},{sheet_name},2,FALSE)"
+
+            # Write the formula to the 'Target NET (m2)' column
+            summary_worksheet.write_formula(i+1, summary_data.columns.get_loc('Target NET (m2)'), vlookup_formula)
+
+
+        # Save the Excel file
+        writer.close()
+
+        # Open the Excel file automatically
+        os.system(f'start excel "{file_path}"')
+
+        # If successful, print a message
+        print(f"Data exported to {file_path} and opened in Excel")
+
+    else:
+        print("No file selected. Export cancelled.")
+
+    # Remember to close the connection
+    conn.close()
+
+
+except pyodbc.Error as e:
+    # If connection fails, print the error
+    print("Error connecting to the database:", e)
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to Top Button with Font Awesome icon and custom style -->
+  <button onclick="scrollToTop()" id="back-to-top-btn" class="button" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+
+  <script>
+    // JavaScript to show/hide the back to top button
+    window.onscroll = function() {scrollFunction()};
+    
+    function scrollFunction() {
+      var button = document.getElementById("back-to-top-btn");
+      if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+        button.style.opacity = "1";
+      } else {
+        button.style.opacity = "0";
+      }
+    }
+    
+    function scrollToTop() {
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+  </script>
+
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+  <script src="js/pythonscript.js"></script>
+</body>
+</html>
